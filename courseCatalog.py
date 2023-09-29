@@ -44,7 +44,7 @@ for website_url in website_urls:
     # Parse the HTML content (soup Object)
 	curr_dept_soup = BeautifulSoup(response.text, 'html.parser')
 	#debug: need correct encoding to support write of certain chars
-	with open("./log.txt", 'a', encoding='utf-8') as file:
+	with open("./combinedHtml_log.txt", 'a', encoding='utf-8') as file:
 		print(curr_dept_soup, file=file)
 
     # Combine soup objects by extending the body contents
@@ -73,7 +73,8 @@ for course_name_element, course_description_element in zip(course_name_elements,
 	course_name = course_name_element.text.strip()
 	course_description = course_description_element.text.strip()
 	course_descriptions[course_name] = course_description
-	with open("./log2.txt", 'w', encoding='utf-8') as file:
+	#debug:
+	with open("./nameDesc_log.txt", 'w', encoding='utf-8') as file:
 		for c_name in course_descriptions:
 			print(c_name, ':', course_descriptions[c_name], file=file)
 
@@ -93,7 +94,7 @@ matched_course_descriptions = {}
 # Match taken courses to course descriptions
 for course_code, description in course_descriptions.items():
 	#print(course_code, '\n', description)
-	
+
 	#Check if any of taken course codes are in course_descriptions keys
 	short_course_code = ' '.join(course_code.split()[:2]).rstrip('.')
 	for my_course_code in my_course_codes:
@@ -102,8 +103,27 @@ for course_code, description in course_descriptions.items():
 			#when matched, append course_code:descriptions pairs
 			matched_course_descriptions[course_code] = course_descriptions[course_code]
 
-    
+# the ordering of the final matched courses are random
+# so cant rely on chronological ordering from beginning 
 print(len(matched_course_descriptions))
-for courseDescript in matched_course_descriptions:
-	print(courseDescript)
-	print(matched_course_descriptions[courseDescript])
+# for courseDescript in matched_course_descriptions:
+# 	print(courseDescript + ':\n')
+# 	print(matched_course_descriptions[courseDescript])
+
+# ordered list to store the course signatures (keys) 
+# in the order they were added
+ordered_keys = []
+# list of strings with course signatures (keys) 
+# prepended to course descriptions (values)
+result_list = []
+
+# reformat dict for TD-IDF 
+for course_title, course_description in matched_course_descriptions.items():
+    ordered_keys.append(course_title)
+
+    # Create string with key prepended to the value
+    formatted_string = f"{course_title}: {course_description}"
+    result_list.append(formatted_string)
+
+print(ordered_keys)
+print(result_list)
