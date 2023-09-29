@@ -20,6 +20,8 @@ for page in pdf.pages:
 	print(page_text)  
 
 	#remove withdrawals, etc. 
+	# \s+\d{1,2}\.\d{1,2}: matches for ex: "4.00" after twice
+	# (?:F|D|W|NP): matches for letter grades, non-capturing group 
 	bad_pattern = r'\b[A-Z]{3,4} \d{1,3}[A-Za-z]? [A-Za-z.:&/\s]+(?:\s+\d{1,2}\.\d{1,2}\s+)?(?:F|D|W|NP)\s+\d{1,2}\.\d{1,2}(?: [A-Za-z.:&/\s]+)?\n?'
 	page_text = re.sub(bad_pattern, '', page_text)
       
