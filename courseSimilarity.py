@@ -2,9 +2,15 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from courseCatalog import ordered_keys
 from courseCatalog import matched_course_descriptions as course_desciptions
 
 from tabulate import tabulate
+import networkx as nx
+import matplotlib.pyplot as plt
+
+import re
+
 
 # convert course descriptions into TF-IDF vectors
 # tfidf_matrix will be a sparse matrix where each row corresponds to a course description 
@@ -27,5 +33,62 @@ table = tabulate(cosine_similarity_df, headers='keys', tablefmt='fancy_grid')
 with open('cosSim_table.txt', 'a', encoding='utf-8') as file:
 	file.write(table_string)
 	file.write(table)
+
+
+#Graph creation
+G = nx.Graph()
+for course_title in ordered_keys:
+    G.add_node(course_title)	
+
+# Compute cosine similarity between course descriptions and assign it as edge weights
+for i, course1 in enumerate(ordered_keys):
+	for j, course2 in enumerate(ordered_keys):
+		if i < j:
+			# Retreive cosine similarity between specific course descriptions
+			#similarity = cosine_similarity([result_list[i].split(': ')[1]], [result_list[j].split(': ')[1]])[0][0]
+			similarity = cosine_similarities[i][j]
+
+			# Assign cosine similarity as edge weight
+			G.add_edge(course1, course2, weight=similarity)
+
+# Adjust the figure size based on the number of nodes
+fig = plt.figure(figsize=(10, 10))
+pos = nx.spring_layout(G, k=1, iterations=100)  # Layout for the graph
+
+#finetune
+scaling_factor = 2.0
+scaled_pos = {node: (x * scaling_factor, y * scaling_factor) for node, (x, y) in pos.items()}
+G.add_nodes_from(G.nodes())
+G.add_edges_from([(u, v) for u, v in G.edges()])
+for u, v in G.edges():
+    G[u][v]['weight'] = G[u][v]['weight'] * scaling_factor
+
+# Function to extract titles from a string
+def extract_titles(input_string):
+    pattern = r'\w+\s\d+\.\s(.*?)\s\(\d+\)'
+    titles = re.findall(pattern, input_string)
+    return ', '.join(titles)
+
+# Draw nodes and labels
+nx.draw_networkx_nodes(G, pos, node_size=100, node_color='skyblue')
+#node_labels = {course_title: course_title.split(' ')[1].strip() for course_title in ordered_keys}
+titles_list = [extract_titles(key) for key in ordered_keys]
+node_labels = {node: title for node, title in zip(G.nodes(), titles_list)}
+nx.draw_networkx_labels(G, pos, font_size=8, labels=node_labels, font_family="Arial")
+
+# Draw edges and edge labels
+edges = G.edges()
+weights = [G[u][v]['weight'] for u, v in edges]
+nx.draw_networkx_edges(G, pos, edgelist=edges, width=weights, edge_color='gray')
+#nx.draw_networkx_edges(G, pos, width=weights, edge_color='gray')
+
+# Add edge labels with weights
+#edge_labels = {(u, v): f"{G[u][v]['weight']:.2f}" for u, v in edges}
+#nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6)
+
+plt.axis("off")
+plt.title("Cosine Similarity Graph of Course Descriptions")
+plt.show()
+
 
 
