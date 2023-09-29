@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 
 import re
 
-
-# convert course descriptions into TF-IDF vectors
+# convert course descriptions into TF-IDF vectors/ tokenization
 # tfidf_matrix will be a sparse matrix where each row corresponds to a course description 
 # and each column corresponds to a unique term in the corpus.
 tfidf_vectorizer = TfidfVectorizer()
@@ -24,11 +23,12 @@ tfidf_matrix = tfidf_vectorizer.fit_transform(course_desciptions)
 cosine_similarities = cosine_similarity(tfidf_matrix, tfidf_matrix)
 
 cosine_similarity_df = pd.DataFrame(cosine_similarities, columns=course_desciptions.keys(), index=course_desciptions.keys())
-print(cosine_similarity_df)
+#print(cosine_similarity_df)
+
+# Write formatted similarity matrix to file 
 cosine_similarity_df.to_csv('cosSim_matrix.csv')
 table_string = cosine_similarity_df.to_string()
 
-# Create nicely formatted table
 table = tabulate(cosine_similarity_df, headers='keys', tablefmt='fancy_grid')
 with open('cosSim_table.txt', 'a', encoding='utf-8') as file:
 	file.write(table_string)
@@ -43,6 +43,8 @@ for course_title in ordered_keys:
 # Compute cosine similarity between course descriptions and assign it as edge weights
 for i, course1 in enumerate(ordered_keys):
 	for j, course2 in enumerate(ordered_keys):
+		# only calculate cosine similarty of the 'upper' triangle of matrix
+		#  also i == j is not included since it always 1, not interesting  
 		if i < j:
 			# Retreive cosine similarity between specific course descriptions
 			#similarity = cosine_similarity([result_list[i].split(': ')[1]], [result_list[j].split(': ')[1]])[0][0]
@@ -63,32 +65,40 @@ G.add_edges_from([(u, v) for u, v in G.edges()])
 for u, v in G.edges():
     G[u][v]['weight'] = G[u][v]['weight'] * scaling_factor
 
-# Function to extract titles from a string
+# helper function to extract titles only from course signatures
 def extract_titles(input_string):
-    pattern = r'\w+\s\d+\.\s(.*?)\s\(\d+\)'
+	#whitespace between metacharacters matter
+    pattern = r'\w+\s\d+[A-Z]?\.\s(.*?)\s\(\d+\)'
     titles = re.findall(pattern, input_string)
     return ', '.join(titles)
 
 # Draw nodes and labels
 nx.draw_networkx_nodes(G, pos, node_size=100, node_color='skyblue')
-#node_labels = {course_title: course_title.split(' ')[1].strip() for course_title in ordered_keys}
 titles_list = [extract_titles(key) for key in ordered_keys]
+
+#debug: missing node labels (course titles)
+# with open('tempLog.txt', 'w', encoding='utf-8') as file:
+# 	file.write("[" + ", \n".join(map(str, ordered_keys)) + "]")
+# 	file.write("[" + ", \n".join(map(str, titles_list)) + "]")
+	
 node_labels = {node: title for node, title in zip(G.nodes(), titles_list)}
 nx.draw_networkx_labels(G, pos, font_size=8, labels=node_labels, font_family="Arial")
 
-# Draw edges and edge labels
+# Draw edges
 edges = G.edges()
 weights = [G[u][v]['weight'] for u, v in edges]
 nx.draw_networkx_edges(G, pos, edgelist=edges, width=weights, edge_color='gray')
 #nx.draw_networkx_edges(G, pos, width=weights, edge_color='gray')
 
-# Add edge labels with weights
+# Add edge labels with weight numbers
 #edge_labels = {(u, v): f"{G[u][v]['weight']:.2f}" for u, v in edges}
 #nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6)
 
 plt.axis("off")
 plt.title("Cosine Similarity Graph of Course Descriptions")
 plt.show()
+
+
 
 
 
