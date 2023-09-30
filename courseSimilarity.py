@@ -1,15 +1,17 @@
+# NLP
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
+# courseCatalog variables
 from courseCatalog import ordered_keys
 from courseCatalog import matched_course_descriptions as course_desciptions
-
+# graphing, plotting
 from tabulate import tabulate
 import networkx as nx
 import matplotlib.pyplot as plt
-
+# regex, json
 import re
+import json
 
 # convert course descriptions into TF-IDF vectors/ tokenization
 # tfidf_matrix will be a sparse matrix where each row corresponds to a course description 
@@ -34,7 +36,11 @@ with open('cosSim_table.txt', 'a', encoding='utf-8') as file:
 	file.write(table_string)
 	file.write(table)
 
-
+'''
+Represent cosine similarity between pairs of courses
+where courses are nodes and 
+where cosine similarity are edge weights
+'''
 #Graph creation
 G = nx.Graph()
 for course_title in ordered_keys:
@@ -44,10 +50,10 @@ for course_title in ordered_keys:
 for i, course1 in enumerate(ordered_keys):
 	for j, course2 in enumerate(ordered_keys):
 		# only calculate cosine similarty of the 'upper' triangle of matrix
-		#  also i == j is not included since it always 1, not interesting  
+		#  due to symmetry of cosine_similarities matrix 
+		# also i == j is not included since it is always 1, not interesting  
 		if i < j:
 			# Retreive cosine similarity between specific course descriptions
-			#similarity = cosine_similarity([result_list[i].split(': ')[1]], [result_list[j].split(': ')[1]])[0][0]
 			similarity = cosine_similarities[i][j]
 
 			# Assign cosine similarity as edge weight
@@ -55,15 +61,14 @@ for i, course1 in enumerate(ordered_keys):
 
 # Adjust the figure size based on the number of nodes
 fig = plt.figure(figsize=(10, 10))
-pos = nx.spring_layout(G, k=1, iterations=100)  # Layout for the graph
+# force-directed layout for the graph
+pos = nx.spring_layout(G, k=1, iterations=100)  
 
-#finetune
-scaling_factor = 2.0
-scaled_pos = {node: (x * scaling_factor, y * scaling_factor) for node, (x, y) in pos.items()}
-G.add_nodes_from(G.nodes())
-G.add_edges_from([(u, v) for u, v in G.edges()])
-for u, v in G.edges():
-    G[u][v]['weight'] = G[u][v]['weight'] * scaling_factor
+#scale the graph while perserving proportionality
+# scaling_factor = 5.0
+# scaled_pos = {node: (x * scaling_factor, y * scaling_factor) for node, (x, y) in pos.items()}
+# for u, v in G.edges():
+#     G[u][v]['weight'] = G[u][v]['weight'] * scaling_factor
 
 # helper function to extract titles only from course signatures
 def extract_titles(input_string):
@@ -95,8 +100,31 @@ nx.draw_networkx_edges(G, pos, edgelist=edges, width=weights, edge_color='gray')
 #nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6)
 
 plt.axis("off")
-plt.title("Cosine Similarity Graph of Course Descriptions")
+plt.title("Cosine Similarity Graph based on Course Descriptions")
 plt.show()
+
+
+'''
+Reformat Graph to JSON representation (as input for D3.js)
+'''
+# Extract nodes and edges
+nodes = list(G.nodes(data=True))
+edges = list(G.edges(data=True))
+
+# Create nodes, links data
+# **node_attrs auto-unpack and add other attributes as key:value pairs
+nodes_data = [{"id": node_id, **node_attrs} for node_id, node_attrs in nodes]
+links_data = [{"source": source, "target": target, **edge_attrs} for source, target, edge_attrs in edges]
+
+# Create a dictionary to hold the nodes and links data
+# Remember that links independently define the edges, 
+#  not indexed/paired with nodes 
+graph_data = {"nodes": nodes_data, "links": links_data}
+
+# Save graph to JSON conversion
+graph_json = json.dumps(graph_data, indent=2)
+with open('graph2json.txt', 'w', encoding='utf-8') as file:
+	file.write(graph_json)
 
 
 
