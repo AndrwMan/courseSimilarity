@@ -113,7 +113,28 @@ edges = list(G.edges(data=True))
 
 # Create nodes, links data
 # **node_attrs auto-unpack and add other attributes as key:value pairs
-nodes_data = [{"id": node_id, **node_attrs} for node_id, node_attrs in nodes]
+#old node-in-json creation; only has id property 
+#nodes_data = [{"id": node_id, **node_attrs} for node_id, node_attrs in nodes]
+
+# Function to extract the description 
+# w/o reference to course codes (Prerequistes, .etc)
+def extract_description(text):
+	print(text, "\n")
+	# Regular expression pattern to match the description
+	#pattern = r'^(.*?)(?: \(Credit not allowed for .*?\))?(?: Prerequisites: .*)?(?: Students may receive credit for .*)?$'
+	pattern = r'^(.*?)(?: \(Credit not (?:allowed|offered) for .*?\))?(?: Prerequisites: .*)?(?: Students may (?:not )?receive credit for .*)?$'
+
+	match = re.search(pattern, text, re.DOTALL)
+	if match:
+			return match.group(1).strip()
+	# Return original text if no match is found
+	#  so text is already as desired
+	return text  
+
+#new node in json creation; adds description property 
+#nodes_data = [{"id": node_id, "description": course_desciptions.get(node_id, "")} for node_id in G.nodes()]
+nodes_data = [{"id": node_id, "description": extract_description(course_desciptions.get(node_id, ""))} for node_id in G.nodes()]
+
 links_data = [{"source": source, "target": target, **edge_attrs} for source, target, edge_attrs in edges]
 
 # Create a dictionary to hold the nodes and links data

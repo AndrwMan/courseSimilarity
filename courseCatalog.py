@@ -122,8 +122,14 @@ for course_title, course_description in matched_course_descriptions.items():
     ordered_keys.append(course_title)
 
     # Create string with key prepended to the value
-    formatted_string = f"{course_title}: {course_description}"
+    formatted_string = f"{course_title}: {course_description}" 
     result_list.append(formatted_string)
+
+	# did not overwrite matched_course_descriptions 
+	#  values w/ result_list (prepended descriptions) 
+	#  if overwritten added info probably helps with similarity
+	#matched_course_descriptions[course_title] = formatted_string 
 
 print(ordered_keys)
 print(result_list)
+print(matched_course_descriptions)
